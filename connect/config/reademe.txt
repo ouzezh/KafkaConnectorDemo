@@ -1,0 +1,3 @@
+connect-standalone.properties	启动脚本参数，配置worker
+connect-file-source.properties	启动脚本参数，配置connector
+config/connect-log4j.properties	启动脚本使用的默认日志位置之一

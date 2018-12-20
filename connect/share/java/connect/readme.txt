@@ -1,0 +1,1 @@
+connector jar路径，connect-file-source.properties中指定，默认值share/java

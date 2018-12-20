@@ -1,0 +1,38 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+eclipse {
+  classpath {
+    downloadSources = false
+    downloadJavadoc = false
+  }
+}
+tasks.withType(JavaCompile) {
+	options.encoding = "UTF-8"
+}
+
+sourceCompatibility = 1.8
+jar {
+    baseName='target'
+    version='0.1'
+}
+
+repositories {
+	mavenLocal()
+    maven { url "http://maven.aliyun.com/nexus/content/repositories/central" }
+}
+
+task cleanJars {
+  file("build/jars").delete()
+}
+task copyJars(type:Copy, dependsOn:cleanJars) {
+  from configurations.runtimeClasspath
+  into 'build/jars' // 目标位置
+}
+
+dependencies {
+    implementation 'org.apache.kafka:connect-api:+'// api
+    implementation 'org.apache.kafka:connect-file:+'
+    implementation 'org.apache.kafka:connect-runtime:+'// kafka runtime jar, not need if start with connection-standalone in confluent install direction  
+
+	testImplementation 'junit:junit:+'
+}

@@ -1,0 +1,1 @@
+kafka运行时jar，启动脚本connect-standalone中默认的classpath路径之一
