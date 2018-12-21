@@ -10,6 +10,7 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
 import org.slf4j.Logger;
@@ -40,12 +41,12 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public String version() {
-    return null;
+    return AppInfoParser.getVersion();
   }
 
   @Override
   public void start(Map<String, String> props) {
-    log.info("connector props: " + props.toString());
+    log.info("start source connector: {}, props:{}", getClass().getName(), props.toString());
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
     filename = parsedConfig.getString(FILE_CONFIG);
@@ -77,7 +78,7 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void stop() {
-    // Nothing to do since no background monitoring is required
+    log.info("stop connector {}", getClass().getName());
   }
 
   /**
