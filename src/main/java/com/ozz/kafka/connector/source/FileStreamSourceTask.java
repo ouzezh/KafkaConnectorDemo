@@ -35,16 +35,15 @@ public class FileStreamSourceTask extends SourceTask {
   private int batchSize;
 
   private Long sourceOffset = null;
-  long sleeptime = 5000;
 
   @Override
   public String version() {
-    return null;
+    return new FileStreamSourceConnector().version();
   }
 
   @Override
   public void start(Map<String, String> props) {
-    log.info("start source task: {}, props: {}", getClass().getName(), props.toString());
+    log.info(Util.getConnectorMsg("start source task", this, version(), props));
 
     // config
     filename = props.get(FileStreamSourceConnector.FILE_CONFIG);
@@ -66,7 +65,7 @@ public class FileStreamSourceTask extends SourceTask {
     // check file exists
     if (filename == null || !Files.exists(Paths.get(filename)) || Files.isDirectory(Paths.get(filename))) {
       log.warn("read file {} : not exists", filename);
-      Util.sleep(sleeptime);
+      Util.sleep();
       return Collections.emptyList();
     }
 
@@ -75,7 +74,7 @@ public class FileStreamSourceTask extends SourceTask {
       if (sourceOffset > 0) {
         for (long i = sourceOffset; i > 0; i--) {
           if(reader.readLine() == null) {
-            Util.sleep(sleeptime);
+            Util.sleep();
             return Collections.emptyList();
           }
         }
@@ -101,7 +100,7 @@ public class FileStreamSourceTask extends SourceTask {
       }
 
       if (records.isEmpty()) {
-        Util.sleep(sleeptime);
+        Util.sleep();
       }
       return records;
     } catch (IOException e) {
@@ -121,7 +120,7 @@ public class FileStreamSourceTask extends SourceTask {
    */
   @Override
   public synchronized void stop() {
-    log.info("stop source task: {}", getClass().getName());
+    log.info(Util.getConnectorMsg("stop source task", this, version(), null));
   }
 
   private Map<String, String> offsetKey(String filename) {

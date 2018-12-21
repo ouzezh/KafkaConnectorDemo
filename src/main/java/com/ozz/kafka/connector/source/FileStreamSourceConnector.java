@@ -16,6 +16,8 @@ import org.apache.kafka.connect.source.SourceConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ozz.kafka.connector.util.Util;
+
 /**
  * (1)start 读取配置信息到类变量，包含任务配置、版本
  * (2)taskConfigs 分配配置到各个任务实例
@@ -30,7 +32,7 @@ public class FileStreamSourceConnector extends SourceConnector {
   public static final String FILE_CONFIG = "file";
   public static final String TASK_BATCH_SIZE_CONFIG = "batch.size";
 
-  private String filename;
+  private List<String> filename;
   private String topic;
   private int batchSize;
 
@@ -46,10 +48,10 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info("start source connector: {}, props:{}", getClass().getName(), props.toString());
+    log.info(Util.getConnectorMsg("start source connector", this, version(), props));
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
-    filename = parsedConfig.getString(FILE_CONFIG);
+    filename = parsedConfig.getList(FILE_CONFIG);
     List<String> topics = parsedConfig.getList(TOPIC_CONFIG);
     if (topics.size() != 1) {
       throw new ConfigException("'topic' in FileStreamSourceConnector configuration requires definition of a single topic");
@@ -65,20 +67,26 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public List<Map<String, String>> taskConfigs(int maxTasks) {
+    if(filename.size() > maxTasks) {
+      throw new ConfigException(String.format("'topic' in FileStreamSourceConnector configuration file count %d more than maxTasks %d", filename.size(), maxTasks));
+    }
+
     ArrayList<Map<String, String>> configs = new ArrayList<>();
-    // Only one input partition makes sense.
-    Map<String, String> config = new HashMap<>();
-    if (filename != null)
-      config.put(FILE_CONFIG, filename);
-    config.put(TOPIC_CONFIG, topic);
-    config.put(TASK_BATCH_SIZE_CONFIG, String.valueOf(batchSize));
-    configs.add(config);
+    for(String tmp: filename) {
+      Map<String, String> config = new HashMap<>();
+      if (filename != null)
+        config.put(FILE_CONFIG, tmp);
+      config.put(TOPIC_CONFIG, topic);
+      config.put(TASK_BATCH_SIZE_CONFIG, String.valueOf(batchSize));
+      configs.add(config);
+    }
+
     return configs;
   }
 
   @Override
   public void stop() {
-    log.info("stop connector {}", getClass().getName());
+    log.info(Util.getConnectorMsg("stop source connector", this, version(), null));
   }
 
   /**
