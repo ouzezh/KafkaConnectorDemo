@@ -35,6 +35,7 @@ public class FileStreamSourceTask extends SourceTask {
   private int batchSize;
 
   private Long sourceOffset = null;
+  long sleeptime = 5000;
 
   @Override
   public String version() {
@@ -45,34 +46,32 @@ public class FileStreamSourceTask extends SourceTask {
   public void start(Map<String, String> props) {
     log.info("task props: " + props.toString());
 
+    // config
     filename = props.get(FileStreamSourceConnector.FILE_CONFIG);
     topic = props.get(FileStreamSourceConnector.TOPIC_CONFIG);
     batchSize = Integer.parseInt(props.get(FileStreamSourceConnector.TASK_BATCH_SIZE_CONFIG));
+
+    // recover offset safe point
+    Map<String, Object> offset = context.offsetStorageReader().offset(Collections.singletonMap(FileStreamSourceConnector.FILE_CONFIG, filename));
+    if (offset != null && offset.get(POSITION_FIELD) != null) {
+      sourceOffset = (Long) offset.get(POSITION_FIELD);
+    }
+    if(sourceOffset == null) {
+      sourceOffset = 0L;
+    }
   }
 
   @Override
   public List<SourceRecord> poll() throws InterruptedException {
     // check file exists
-    long sleeptime = 3000;
     if (filename == null || !Files.exists(Paths.get(filename)) || Files.isDirectory(Paths.get(filename))) {
       log.warn("read file {} : not exists", filename);
       Util.sleep(sleeptime);
       return Collections.emptyList();
     }
 
-    // recover offset safe point
-    if(sourceOffset == null) {
-      Map<String, Object> offset = context.offsetStorageReader().offset(Collections.singletonMap(FileStreamSourceConnector.FILE_CONFIG, filename));
-      if (offset != null && offset.get(POSITION_FIELD) != null) {
-        sourceOffset = (Long) offset.get(POSITION_FIELD);
-      }
-      if(sourceOffset == null) {
-        sourceOffset = 0L;
-      }
-    }
-
     try (BufferedReader reader = Files.newBufferedReader(Paths.get(filename), StandardCharsets.UTF_8)) {
-      // skip record before offsert
+      // skip record before offset
       if (sourceOffset > 0) {
         for (long i = sourceOffset; i > 0; i--) {
           if(reader.readLine() == null) {
