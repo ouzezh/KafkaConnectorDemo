@@ -22,11 +22,11 @@ repositories {
 }
 
 task cleanJars {
-  file("build/jars").delete()
+  file('$buildDir/libs/libs').delete()
 }
 task copyJars(type:Copy, dependsOn:cleanJars) {
   from configurations.runtimeClasspath
-  into 'build/jars' // 目标位置
+  into '$buildDir/libs/libs'
 }
 
 dependencies {
