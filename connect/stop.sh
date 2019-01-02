@@ -1,7 +1,9 @@
 #!/usr/bin/env sh
 
+curl localhost:8083/connectors | jq
 curl -X DELETE http://localhost:8083/connectors/local-file-source && echo "stop source success" || echo "stop source fail"
 curl -X DELETE http://localhost:8083/connectors/local-file-sink && echo "stop sink success" || echo "stop sink fail"
+curl localhost:8083/connectors | jq
 
 dir=$(cd $(dirname $0);pwd)
 if [ -f $dir/run.pid ]

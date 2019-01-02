@@ -2,6 +2,7 @@ package com.ozz.kafka.connector.sink;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -36,6 +37,15 @@ public class FileStreamSinkTask extends SinkTask {
 
     this.taskId = props.get(TASKID_FIELD);
     this.filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
+
+    try {
+      Path path = Paths.get(filename);
+      if(Files.notExists(path)) {
+        Files.createFile(path);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -48,6 +58,10 @@ public class FileStreamSinkTask extends SinkTask {
       log.info("task {} write line to {}: {}", this.taskId, this.filename, record.value());
       lines.add(record.value().toString());
     }
+    if(lines.isEmpty()) {
+      return;
+    }
+
     try {
       Files.write(Paths.get(filename), lines, StandardOpenOption.APPEND);
     } catch (IOException e) {
