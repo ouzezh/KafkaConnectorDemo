@@ -12,9 +12,9 @@ public class Util {
   }
 
   public static <T> String getConnectorMsg(String msg, T clz, String version, Map<String, String> props) {
-    msg = String.format("%s: classname=%s,version=%s", msg, clz.getClass().getSimpleName(), version);
+    msg = String.format("%s %s, version=%s", msg, clz.getClass().getSimpleName(), version);
     if (props != null) {
-      msg = String.format("%s,props=%s", msg, props.toString());
+      msg = String.format("%s, props=%s", msg, props.toString());
     }
     return msg;
   }

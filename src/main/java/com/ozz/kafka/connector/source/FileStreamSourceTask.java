@@ -43,7 +43,7 @@ public class FileStreamSourceTask extends SourceTask {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start source task", this, version(), context.configs()));
+    log.info(Util.getConnectorMsg("start", this, version(), context.configs()));
 
     // config
     filename = props.get(FileStreamSourceConnector.FILE_CONFIG);
@@ -120,7 +120,7 @@ public class FileStreamSourceTask extends SourceTask {
    */
   @Override
   public synchronized void stop() {
-    log.info(Util.getConnectorMsg("stop source task", this, version(), context.configs()));
+    log.info(Util.getConnectorMsg("stop", this, version(), context.configs()));
   }
 
   private Map<String, String> offsetKey(String filename) {
