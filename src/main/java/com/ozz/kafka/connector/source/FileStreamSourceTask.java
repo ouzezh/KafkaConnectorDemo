@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ public class FileStreamSourceTask extends SourceTask {
 
   private String filename;
   private String topic;
+  private int partition;
   private int batchSize;
 
   private Long sourceOffset = null;
@@ -48,14 +50,15 @@ public class FileStreamSourceTask extends SourceTask {
     // config
     filename = props.get(FileStreamSourceConnector.FILE_CONFIG);
     topic = props.get(FileStreamSourceConnector.TOPIC_CONFIG);
+    partition = Integer.parseInt(props.get(FileStreamSourceConnector.TASK_PARTITION_CONFIG));
     batchSize = Integer.parseInt(props.get(FileStreamSourceConnector.TASK_BATCH_SIZE_CONFIG));
 
     // recover offset safe point
-    Map<String, Object> offset = context.offsetStorageReader().offset(Collections.singletonMap(FileStreamSourceConnector.FILE_CONFIG, filename));
+    Map<String, Object> offset = context.offsetStorageReader().offset(offsetKey(topic, filename));
     if (offset != null && offset.get(POSITION_FIELD) != null) {
       sourceOffset = (Long) offset.get(POSITION_FIELD);
     }
-    if(sourceOffset == null) {
+    if (sourceOffset == null) {
       sourceOffset = 0L;
     }
   }
@@ -73,7 +76,7 @@ public class FileStreamSourceTask extends SourceTask {
       // skip record before offset
       if (sourceOffset > 0) {
         for (long i = sourceOffset; i > 0; i--) {
-          if(reader.readLine() == null) {
+          if (reader.readLine() == null) {
             Util.sleep();
             return Collections.emptyList();
           }
@@ -89,14 +92,10 @@ public class FileStreamSourceTask extends SourceTask {
           break;
         }
         sourceOffset++;
-        log.info("read file {} line {}: {}", filename, sourceOffset, line);
-
-        // calc partition
-        Map<String, String> sourcePartition = offsetKey(filename);
-        Integer partition = calcPartition(sourcePartition);
+        log.info("read file {}, partition:{}, line {}: {}", filename, partition, sourceOffset, line);
 
         // commit
-        records.add(new SourceRecord(sourcePartition, offsetValue(sourceOffset), topic, partition, KEY_SCHEMA, sourceOffset, VALUE_SCHEMA, line));
+        records.add(new SourceRecord(offsetKey(topic, filename), offsetValue(sourceOffset), topic, partition, KEY_SCHEMA, sourceOffset, VALUE_SCHEMA, line));
       }
 
       if (records.isEmpty()) {
@@ -106,10 +105,6 @@ public class FileStreamSourceTask extends SourceTask {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private Integer calcPartition(Map<String, String> sourcePartition) {
-    return 0;
   }
 
   /**
@@ -123,8 +118,11 @@ public class FileStreamSourceTask extends SourceTask {
     log.info(Util.getConnectorMsg("stop", this, version(), context.configs()));
   }
 
-  private Map<String, String> offsetKey(String filename) {
-    return Collections.singletonMap(FileStreamSourceConnector.FILE_CONFIG, filename);
+  private Map<String, String> offsetKey(String topic, String filename) {
+    Map<String, String> map = new HashMap<>();
+    map.put(FileStreamSourceConnector.TOPIC_CONFIG, filename);
+    map.put(FileStreamSourceConnector.FILE_CONFIG, filename);
+    return map;
   }
 
   private Map<String, Long> offsetValue(Long sourceOffset) {

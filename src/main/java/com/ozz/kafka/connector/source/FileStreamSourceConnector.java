@@ -28,8 +28,9 @@ import com.ozz.kafka.connector.util.Util;
 public class FileStreamSourceConnector extends SourceConnector {
   private Logger log = LoggerFactory.getLogger(getClass());
 
-  public static final String TOPIC_CONFIG = "topic";
   public static final String FILE_CONFIG = "file";
+  public static final String TOPIC_CONFIG = "topic";
+  public static final String TASK_PARTITION_CONFIG = "partition";
   public static final String TASK_BATCH_SIZE_CONFIG = "batch.size";
 
   private List<String> filename;
@@ -61,32 +62,23 @@ public class FileStreamSourceConnector extends SourceConnector {
   }
 
   @Override
-  public Class<? extends Task> taskClass() {
-    return FileStreamSourceTask.class;
-  }
-
-  @Override
   public List<Map<String, String>> taskConfigs(int maxTasks) {
     if(filename.size() > maxTasks) {
       throw new ConfigException(String.format("'topic' in FileStreamSourceConnector configuration file count %d more than maxTasks %d", filename.size(), maxTasks));
     }
 
     ArrayList<Map<String, String>> configs = new ArrayList<>();
-    for(String tmp: filename) {
+    for(int i=0; i<filename.size(); i++) {
+      String tmp = filename.get(i);
       Map<String, String> config = new HashMap<>();
-      if (filename != null)
-        config.put(FILE_CONFIG, tmp);
+      config.put(FILE_CONFIG, tmp);
       config.put(TOPIC_CONFIG, topic);
+      config.put(TASK_PARTITION_CONFIG, String.valueOf(i));
       config.put(TASK_BATCH_SIZE_CONFIG, String.valueOf(batchSize));
       configs.add(config);
     }
 
     return configs;
-  }
-
-  @Override
-  public void stop() {
-    log.info(Util.getConnectorMsg("stop", this, version(), null));
   }
 
   /**
@@ -95,6 +87,16 @@ public class FileStreamSourceConnector extends SourceConnector {
   @Override
   public ConfigDef config() {
     return CONFIG_DEF;
+  }
+
+  @Override
+  public Class<? extends Task> taskClass() {
+    return FileStreamSourceTask.class;
+  }
+
+  @Override
+  public void stop() {
+    log.info(Util.getConnectorMsg("stop", this, version(), null));
   }
 
 }
