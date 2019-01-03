@@ -52,6 +52,9 @@ public class FileStreamSinkTask extends SinkTask {
 
   @Override
   public void put(Collection<SinkRecord> records) {
+    if(records.isEmpty()) {
+      return;
+    }
     Iterator<SinkRecord> var2 = records.iterator();
 
     List<String> lines = new ArrayList<>(records.size());
