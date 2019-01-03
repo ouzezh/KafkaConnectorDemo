@@ -24,9 +24,8 @@ import com.ozz.kafka.connector.util.Util;
 public class FileStreamSinkTask extends SinkTask {
   private Logger log = LoggerFactory.getLogger(getClass());
 
-  private String taskId;
+  private String name;
   private String filename;
-  public static final String TASKID_FIELD = "taskId";
 
   @Override
   public String version() {
@@ -35,11 +34,12 @@ public class FileStreamSinkTask extends SinkTask {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start", this, version(), context.configs()));
+    log.info(Util.getConnectorMsg("start task", props.get(FileStreamSinkConnector.NAME_CONFIG), version(), context.configs()));
 
-    this.taskId = props.get(TASKID_FIELD);
+    this.name = props.get(FileStreamSinkConnector.NAME_CONFIG);
     this.filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
 
+    // init
     try {
       Path path = Paths.get(filename);
       if(Files.notExists(path)) {
@@ -60,7 +60,8 @@ public class FileStreamSinkTask extends SinkTask {
     List<String> lines = new ArrayList<>(records.size());
     while (var2.hasNext()) {
       SinkRecord record = (SinkRecord) var2.next();
-      log.info("task {} write line to {}: {}", this.taskId, this.filename, record.value());
+      log.info("{} {}", record.keySchema(), record.valueSchema());//XXX
+      log.info("task {} write line to {}: {}", this.name, this.filename, record.value());
       lines.add(record.value().toString());
     }
     if(lines.isEmpty()) {
@@ -81,11 +82,31 @@ public class FileStreamSinkTask extends SinkTask {
    */
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> currentOffsets) {
+    super.flush(currentOffsets);
   }
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop", this, version(), context.configs()));
+    log.info(Util.getConnectorMsg("stop task", this.name, version(), context.configs()));
   }
 
+  /**
+   * 释放资源，再平衡开始时调用
+   *
+   */
+  @Override
+  public void close(Collection<TopicPartition> partitions) {
+    super.close(partitions);
+    log.info(Util.getConnectorMsg("close task", this.name, version(), context.configs()));
+  }
+
+  /**
+   * 分配资源，再平衡完成时调用
+   *
+   */
+  @Override
+  public void open(Collection<TopicPartition> partitions) {
+    super.open(partitions);
+    log.info(Util.getConnectorMsg("open task", this.name, version(), context.configs()));
+  }
 }

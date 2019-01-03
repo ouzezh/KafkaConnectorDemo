@@ -28,17 +28,20 @@ import com.ozz.kafka.connector.util.Util;
 public class FileStreamSourceConnector extends SourceConnector {
   private Logger log = LoggerFactory.getLogger(getClass());
 
+  public static final String NAME_CONFIG = "name";
   public static final String FILE_CONFIG = "file";
   public static final String TOPIC_CONFIG = "topic";
   public static final String TASK_PARTITION_CONFIG = "partition";
   public static final String TASK_BATCH_SIZE_CONFIG = "batch.size";
 
+  private String name;
   private List<String> filename;
   private String topic;
   private int batchSize;
 
   private static final ConfigDef CONFIG_DEF = new ConfigDef()
-      .define(FILE_CONFIG, Type.LIST, null, Importance.HIGH, "Source filename. If not specified, the standard input will be used")
+      .define(NAME_CONFIG, Type.STRING, null, Importance.HIGH, "connector's own property. just for print log")
+      .define(FILE_CONFIG, Type.LIST, null, Importance.HIGH, "Source filename")
       .define(TOPIC_CONFIG, Type.LIST, Importance.HIGH, "The topic to publish data to")
       .define(TASK_BATCH_SIZE_CONFIG, Type.INT, 10, Importance.LOW, "The maximum number of records the Source task can read from file one time");
 
@@ -49,16 +52,17 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start", this, version(), props));
+    log.info(Util.getConnectorMsg("start connector", props.get(NAME_CONFIG), version(), props));
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
-    filename = parsedConfig.getList(FILE_CONFIG);
+    this.name = parsedConfig.getString(NAME_CONFIG);
+    this.filename = parsedConfig.getList(FILE_CONFIG);
     List<String> topics = parsedConfig.getList(TOPIC_CONFIG);
     if (topics.size() != 1) {
       throw new ConfigException("'topic' in FileStreamSourceConnector configuration requires definition of a single topic");
     }
-    topic = topics.get(0);
-    batchSize = parsedConfig.getInt(TASK_BATCH_SIZE_CONFIG);
+    this.topic = topics.get(0);
+    this.batchSize = parsedConfig.getInt(TASK_BATCH_SIZE_CONFIG);
   }
 
   @Override
@@ -71,6 +75,7 @@ public class FileStreamSourceConnector extends SourceConnector {
     for(int i=0; i<filename.size(); i++) {
       String tmp = filename.get(i);
       Map<String, String> config = new HashMap<>();
+      config.put(NAME_CONFIG, String.format("%s-%d", this.name, i));
       config.put(FILE_CONFIG, tmp);
       config.put(TOPIC_CONFIG, topic);
       config.put(TASK_PARTITION_CONFIG, String.valueOf(i));
@@ -96,7 +101,7 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop", this, version(), null));
+    log.info(Util.getConnectorMsg("stop connector", this.name, version(), null));
   }
 
 }

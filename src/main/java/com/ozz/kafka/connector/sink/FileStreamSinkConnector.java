@@ -20,13 +20,15 @@ import com.ozz.kafka.connector.util.Util;
 public class FileStreamSinkConnector extends SinkConnector {
   private Logger log = LoggerFactory.getLogger(getClass());
 
+  public static final String NAME_CONFIG = "name";
   public static final String FILE_CONFIG = "file";
-  private static final ConfigDef CONFIG_DEF;
-  private String filename;
 
-  static {
-    CONFIG_DEF = (new ConfigDef()).define("file", Type.STRING, (Object) null, Importance.HIGH, "Destination filename. If not specified, the standard output will be used");
-  }
+  private static final ConfigDef CONFIG_DEF = new ConfigDef()
+      .define(NAME_CONFIG, Type.STRING, null, Importance.HIGH, "connector's own property. just for print log")
+      .define(FILE_CONFIG, Type.STRING, (Object) null, Importance.HIGH, "Destination filename");
+
+  private String name;
+  private String filename;
 
   @Override
   public String version() {
@@ -35,10 +37,11 @@ public class FileStreamSinkConnector extends SinkConnector {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start", this, version(), props));
+    log.info(Util.getConnectorMsg("start connector", props.get(NAME_CONFIG), version(), props));
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
-    this.filename = parsedConfig.getString("file");
+    this.name = parsedConfig.getString(NAME_CONFIG);
+    this.filename = parsedConfig.getString(FILE_CONFIG);
   }
 
   @Override
@@ -48,7 +51,7 @@ public class FileStreamSinkConnector extends SinkConnector {
     for (int i = 0; i < maxTasks; ++i) {
       Map<String, String> config = new HashMap<>();
       if (this.filename != null) {
-        config.put(FileStreamSinkTask.TASKID_FIELD, String.valueOf(i));
+        config.put(NAME_CONFIG, String.format("%s-%d", this.name, i));
         config.put(FILE_CONFIG, this.filename);
       }
 
@@ -70,7 +73,7 @@ public class FileStreamSinkConnector extends SinkConnector {
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop", this, version(), null));
+    log.info(Util.getConnectorMsg("stop connector", this.name, version(), null));
   }
 
 }

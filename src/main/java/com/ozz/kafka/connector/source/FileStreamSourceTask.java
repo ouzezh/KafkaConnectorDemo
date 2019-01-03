@@ -31,6 +31,7 @@ public class FileStreamSourceTask extends SourceTask {
   private static final Schema KEY_SCHEMA = Schema.INT64_SCHEMA;
   private static final Schema VALUE_SCHEMA = Schema.STRING_SCHEMA;
 
+  private String name;
   private String filename;
   private String topic;
   private int partition;
@@ -45,9 +46,10 @@ public class FileStreamSourceTask extends SourceTask {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start", this, version(), context.configs()));
+    log.info(Util.getConnectorMsg("start task", props.get(FileStreamSourceConnector.NAME_CONFIG), version(), context.configs()));
 
     // config
+    this.name = props.get(FileStreamSourceConnector.NAME_CONFIG);
     filename = props.get(FileStreamSourceConnector.FILE_CONFIG);
     topic = props.get(FileStreamSourceConnector.TOPIC_CONFIG);
     partition = Integer.parseInt(props.get(FileStreamSourceConnector.TASK_PARTITION_CONFIG));
@@ -115,7 +117,7 @@ public class FileStreamSourceTask extends SourceTask {
    */
   @Override
   public synchronized void stop() {
-    log.info(Util.getConnectorMsg("stop", this, version(), context.configs()));
+    log.info(Util.getConnectorMsg("stop task", this.name, version(), context.configs()));
   }
 
   private Map<String, String> offsetKey(String topic, String filename) {
