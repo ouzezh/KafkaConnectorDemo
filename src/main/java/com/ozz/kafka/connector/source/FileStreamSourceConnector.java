@@ -55,14 +55,14 @@ public class FileStreamSourceConnector extends SourceConnector {
     log.info(Util.getConnectorMsg("start connector", props.get(NAME_CONFIG), version(), props));
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
-    this.name = parsedConfig.getString(NAME_CONFIG);
-    this.filename = parsedConfig.getList(FILE_CONFIG);
+    name = parsedConfig.getString(NAME_CONFIG);
+    filename = parsedConfig.getList(FILE_CONFIG);
     List<String> topics = parsedConfig.getList(TOPIC_CONFIG);
     if (topics.size() != 1) {
       throw new ConfigException("'topic' in FileStreamSourceConnector configuration requires definition of a single topic");
     }
-    this.topic = topics.get(0);
-    this.batchSize = parsedConfig.getInt(TASK_BATCH_SIZE_CONFIG);
+    topic = topics.get(0);
+    batchSize = parsedConfig.getInt(TASK_BATCH_SIZE_CONFIG);
   }
 
   @Override
@@ -75,7 +75,7 @@ public class FileStreamSourceConnector extends SourceConnector {
     for(int i=0; i<filename.size(); i++) {
       String tmp = filename.get(i);
       Map<String, String> config = new HashMap<>();
-      config.put(NAME_CONFIG, String.format("%s-%d", this.name, i));
+      config.put(NAME_CONFIG, String.format("%s-%d", name, i));
       config.put(FILE_CONFIG, tmp);
       config.put(TOPIC_CONFIG, topic);
       config.put(TASK_PARTITION_CONFIG, String.valueOf(i));
@@ -101,7 +101,7 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop connector", this.name, version(), null));
+    log.info(Util.getConnectorMsg("stop connector", name, version(), null));
   }
 
 }

@@ -23,7 +23,7 @@ public class FileStreamSinkConnector extends SinkConnector {
   public static final String NAME_CONFIG = "name";
   public static final String FILE_CONFIG = "file";
 
-  private static final ConfigDef CONFIG_DEF = new ConfigDef()
+  private static ConfigDef CONFIG_DEF = new ConfigDef()
       .define(NAME_CONFIG, Type.STRING, null, Importance.HIGH, "connector's own property. just for print log")
       .define(FILE_CONFIG, Type.STRING, (Object) null, Importance.HIGH, "Destination filename");
 
@@ -40,8 +40,8 @@ public class FileStreamSinkConnector extends SinkConnector {
     log.info(Util.getConnectorMsg("start connector", props.get(NAME_CONFIG), version(), props));
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
-    this.name = parsedConfig.getString(NAME_CONFIG);
-    this.filename = parsedConfig.getString(FILE_CONFIG);
+    name = parsedConfig.getString(NAME_CONFIG);
+    filename = parsedConfig.getString(FILE_CONFIG);
   }
 
   @Override
@@ -50,9 +50,9 @@ public class FileStreamSinkConnector extends SinkConnector {
 
     for (int i = 0; i < maxTasks; ++i) {
       Map<String, String> config = new HashMap<>();
-      if (this.filename != null) {
-        config.put(NAME_CONFIG, String.format("%s-%d", this.name, i));
-        config.put(FILE_CONFIG, this.filename);
+      if (filename != null) {
+        config.put(NAME_CONFIG, String.format("%s-%d", name, i));
+        config.put(FILE_CONFIG, filename);
       }
 
       configs.add(config);
@@ -73,7 +73,7 @@ public class FileStreamSinkConnector extends SinkConnector {
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop connector", this.name, version(), null));
+    log.info(Util.getConnectorMsg("stop connector", name, version(), null));
   }
 
 }

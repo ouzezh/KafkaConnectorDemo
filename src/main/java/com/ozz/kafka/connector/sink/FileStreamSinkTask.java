@@ -4,11 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -16,6 +12,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
+import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +24,15 @@ public class FileStreamSinkTask extends SinkTask {
   private String name;
   private String filename;
 
+  private FileWriter fileWriter;
+
+  @Override
+  public void initialize(SinkTaskContext context) {
+    super.initialize(context);
+
+    fileWriter = new FileWriter();
+  }
+
   @Override
   public String version() {
     return AppInfoParser.getVersion();
@@ -36,8 +42,8 @@ public class FileStreamSinkTask extends SinkTask {
   public void start(Map<String, String> props) {
     log.info(Util.getConnectorMsg("start task", props.get(FileStreamSinkConnector.NAME_CONFIG), version(), context.configs()));
 
-    this.name = props.get(FileStreamSinkConnector.NAME_CONFIG);
-    this.filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
+    name = props.get(FileStreamSinkConnector.NAME_CONFIG);
+    filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
 
     // init
     try {
@@ -55,24 +61,8 @@ public class FileStreamSinkTask extends SinkTask {
     if(records.isEmpty()) {
       return;
     }
-    Iterator<SinkRecord> var2 = records.iterator();
 
-    List<String> lines = new ArrayList<>(records.size());
-    while (var2.hasNext()) {
-      SinkRecord record = (SinkRecord) var2.next();
-      log.info("{} {}", record.keySchema(), record.valueSchema());//XXX
-      log.info("task {} write line to {}: {}", this.name, this.filename, record.value());
-      lines.add(record.value().toString());
-    }
-    if(lines.isEmpty()) {
-      return;
-    }
-
-    try {
-      Files.write(Paths.get(filename), lines, StandardOpenOption.APPEND);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    fileWriter.write(name, filename, records);
   }
 
   /**
@@ -83,11 +73,13 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> currentOffsets) {
     super.flush(currentOffsets);
+
+    fileWriter.flush();
   }
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop task", this.name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("stop task", name, version(), context.configs()));
   }
 
   /**
@@ -97,7 +89,7 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void close(Collection<TopicPartition> partitions) {
     super.close(partitions);
-    log.info(Util.getConnectorMsg("close task", this.name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("close task", name, version(), context.configs()));
   }
 
   /**
@@ -107,6 +99,6 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void open(Collection<TopicPartition> partitions) {
     super.open(partitions);
-    log.info(Util.getConnectorMsg("open task", this.name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("open task", name, version(), context.configs()));
   }
 }

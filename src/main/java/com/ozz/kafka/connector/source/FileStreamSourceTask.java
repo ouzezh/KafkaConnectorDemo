@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,8 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
+import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +32,8 @@ public class FileStreamSourceTask extends SourceTask {
   private Logger log = LoggerFactory.getLogger(getClass());
 
   public static final String POSITION_FIELD = "position";
-  private static final Schema KEY_SCHEMA = Schema.INT64_SCHEMA;
-  private static final Schema VALUE_SCHEMA = Schema.STRING_SCHEMA;
+  private static Schema KEY_SCHEMA;
+  private static Schema VALUE_SCHEMA;
 
   private String name;
   private String filename;
@@ -38,6 +42,14 @@ public class FileStreamSourceTask extends SourceTask {
   private int batchSize;
 
   private Long sourceOffset = null;
+
+  @Override
+  public void initialize(SourceTaskContext context) {
+    super.initialize(context);
+
+    KEY_SCHEMA = Schema.STRING_SCHEMA;
+    VALUE_SCHEMA = SchemaBuilder.struct().field("content", Schema.STRING_SCHEMA).build();
+  }
 
   @Override
   public String version() {
@@ -49,7 +61,7 @@ public class FileStreamSourceTask extends SourceTask {
     log.info(Util.getConnectorMsg("start task", props.get(FileStreamSourceConnector.NAME_CONFIG), version(), context.configs()));
 
     // config
-    this.name = props.get(FileStreamSourceConnector.NAME_CONFIG);
+    name = props.get(FileStreamSourceConnector.NAME_CONFIG);
     filename = props.get(FileStreamSourceConnector.FILE_CONFIG);
     topic = props.get(FileStreamSourceConnector.TOPIC_CONFIG);
     partition = Integer.parseInt(props.get(FileStreamSourceConnector.TASK_PARTITION_CONFIG));
@@ -74,7 +86,8 @@ public class FileStreamSourceTask extends SourceTask {
       return Collections.emptyList();
     }
 
-    try (BufferedReader reader = Files.newBufferedReader(Paths.get(filename), StandardCharsets.UTF_8)) {
+    Path path = Paths.get(filename);
+    try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
       // skip record before offset
       if (sourceOffset > 0) {
         for (long i = sourceOffset; i > 0; i--) {
@@ -94,10 +107,17 @@ public class FileStreamSourceTask extends SourceTask {
           break;
         }
         sourceOffset++;
-        log.info("read file {}, partition:{}, line {}: {}", filename, partition, sourceOffset, line);
+        log.info("task {}: read file {}, partition:{}, line {}: {}", name, path.getFileName(), partition, sourceOffset, line);
 
         // commit
-        records.add(new SourceRecord(offsetKey(topic, filename), offsetValue(sourceOffset), topic, partition, KEY_SCHEMA, sourceOffset, VALUE_SCHEMA, line));
+        records.add(new SourceRecord(offsetKey(topic, filename),
+                                     offsetValue(sourceOffset),
+                                     topic,
+                                     partition,
+                                     KEY_SCHEMA,
+                                     String.format("%s,%d", path.getFileName(), sourceOffset),
+                                     VALUE_SCHEMA,
+                                     new Struct(VALUE_SCHEMA).put("content", line)));
       }
 
       if (records.isEmpty()) {
@@ -117,7 +137,7 @@ public class FileStreamSourceTask extends SourceTask {
    */
   @Override
   public synchronized void stop() {
-    log.info(Util.getConnectorMsg("stop task", this.name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("stop task", name, version(), context.configs()));
   }
 
   private Map<String, String> offsetKey(String topic, String filename) {
