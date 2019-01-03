@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -67,6 +69,15 @@ public class FileStreamSinkTask extends SinkTask {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Flush all records that have been {@link #put(Collection)} for the specified topic-partitions.
+   * used during the offset commit process
+   *
+   */
+  @Override
+  public void flush(Map<TopicPartition, OffsetAndMetadata> currentOffsets) {
   }
 
   @Override
