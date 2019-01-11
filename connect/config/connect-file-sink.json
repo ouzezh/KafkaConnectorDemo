@@ -1,0 +1,7 @@
+{
+	"connector.class": "com.ozz.kafka.connector.sink.FileStreamSinkConnector",
+	"name": "local-file-sink",
+	"file": "/home/ouzezh/bigdata/connectors/out.log",
+	"tasks.max": "1",
+	"topics": "connect-test"
+}

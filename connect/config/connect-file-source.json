@@ -1,0 +1,8 @@
+{
+	"connector.class": "com.ozz.kafka.connector.source.FileStreamSourceConnector",
+	"file": "/home/ouzezh/bigdata/connectors/in1.log,/home/ouzezh/bigdata/connectors/in2.log",
+	"tasks.max": "2",
+	"batch.size": "5",
+	"name": "local-file-source",
+	"topic": "connect-test"
+}
