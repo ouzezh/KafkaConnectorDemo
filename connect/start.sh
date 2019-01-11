@@ -14,6 +14,6 @@ echo "start pid:"
 cat $dir/run.pid
 
 # distributed start connector
-sleep 5
+sleep 15
 curl -X PUT -H "Content-Type: application/json" localhost:8083/connectors/local-file-source/config --data "$(cat $dir/config/connect-file-source.json)"
 curl -X PUT -H "Content-Type: application/json" localhost:8083/connectors/local-file-sink/config --data "$(cat $dir/config/connect-file-sink.json)"
