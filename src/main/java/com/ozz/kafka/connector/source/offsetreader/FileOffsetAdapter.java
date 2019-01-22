@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.common.config.ConfigDef;
@@ -19,13 +20,12 @@ import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.storage.Converter;
 import org.apache.kafka.connect.storage.FileOffsetBackingStore;
 import org.apache.kafka.connect.storage.OffsetStorageReaderImpl;
-import org.apache.kafka.connect.util.Callback;
+import org.apache.kafka.connect.util.FutureCallback;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class FileOffsetAdapter implements Closeable {
-
   private OffsetStorageReaderImpl offsetReader;
   private FileOffsetBackingStore store;
   private String namespace;
@@ -51,7 +51,10 @@ public class FileOffsetAdapter implements Closeable {
 
       // put offset
       List<Pair<Map<String, String>, Map<String, Long>>> list = new ArrayList<>();
-      Map<String, Long> offset2 = objectMapper.readValue("{\"lastUpdateVersion\":-1,\"lastLoadId\":-2}", new TypeReference<HashMap<String, Long>>() {});
+      Map<String, Long> offset2 = objectMapper.readValue(String.format("{\"lastUpdateVersion\":%s,\"lastLoadId\":%s}",
+                                                                       System.currentTimeMillis(),
+                                                                       System.currentTimeMillis()),
+                                                         new TypeReference<HashMap<String, Long>>() {});
       list.add(Pair.of(partition2, offset2));
       reader.put(list);
     }
@@ -99,20 +102,16 @@ public class FileOffsetAdapter implements Closeable {
       values.put(toByteBuffer(keyConverter, partition, true), toByteBuffer(valueConverter, offset, false));
     }
 
-    store.set(values, new Callback<Void>() {
-      @Override
-      public void onCompletion(Throwable error, Void result) {
-        error = new RuntimeException("test");// XXX
-        if (error != null) {
-          if (error instanceof RuntimeException) {
-            throw (RuntimeException) error;
-          } else {
-            throw new RuntimeException(error);
-          }
-        }
-      }
-    });
-    System.out.println("--End--");
+    FutureCallback<Void> callback = new FutureCallback<>();
+    store.set(values, callback);
+
+    try {
+      callback.get(10, TimeUnit.SECONDS);
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private <T> ByteBuffer toByteBuffer(Converter converter, Map<String, T> v, boolean iskey) {
@@ -125,4 +124,5 @@ public class FileOffsetAdapter implements Closeable {
   public void close() {
     store.stop();
   }
+
 }
