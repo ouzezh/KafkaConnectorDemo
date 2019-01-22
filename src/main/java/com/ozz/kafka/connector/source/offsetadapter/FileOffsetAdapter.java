@@ -1,4 +1,4 @@
-package com.ozz.kafka.connector.source.offsetreader;
+package com.ozz.kafka.connector.source.offsetadapter;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -58,9 +58,9 @@ public class FileOffsetAdapter implements Closeable {
 
     try (FileOffsetAdapter adapter = new FileOffsetAdapter(connectorName, file);) {
       // read offsets
-      Map<Map<String, Object>, Map<String, Object>> offsets = adapter.offsets();
+      Map<Map<String, String>, Map<String, Object>> offsets = adapter.offsets();
       System.out.println(String.format("after put: %d", offsets.size()));
-      for (Entry<Map<String, Object>, Map<String, Object>> en : offsets.entrySet()) {
+      for (Entry<Map<String, String>, Map<String, Object>> en : offsets.entrySet()) {
         System.out.println(String.format("%s = %s", en.getKey(), en.getValue()));
       }
     }
