@@ -40,20 +40,10 @@ public class FileStreamSinkTask extends SinkTask {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start task", props.get(FileStreamSinkConnector.NAME_CONFIG), version(), context.configs()));
+    log.info(Util.getConnectorMsg("start task", props.get(FileStreamSinkConnector.NAME_CONFIG), version()));
 
     name = props.get(FileStreamSinkConnector.NAME_CONFIG);
     filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
-
-    // init
-    try {
-      Path path = Paths.get(filename);
-      if(Files.notExists(path)) {
-        Files.createFile(path);
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @Override
@@ -79,7 +69,7 @@ public class FileStreamSinkTask extends SinkTask {
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop task", name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("stop task", name, version()));
   }
 
   /**
@@ -89,7 +79,7 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void close(Collection<TopicPartition> partitions) {
     super.close(partitions);
-    log.info(Util.getConnectorMsg("close task", name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("close task", name, version()));
   }
 
   /**
@@ -99,6 +89,16 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void open(Collection<TopicPartition> partitions) {
     super.open(partitions);
-    log.info(Util.getConnectorMsg("open task", name, version(), context.configs()));
+    log.info(Util.getConnectorMsg("open task", name, version()));
+
+    // init
+    try {
+      Path path = Paths.get(filename);
+      if(Files.notExists(path)) {
+        Files.createFile(path);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

@@ -1,7 +1,5 @@
 package com.ozz.kafka.connector.util;
 
-import java.util.Map;
-
 public class Util {
   public static void sleep() {
     try {
@@ -11,11 +9,8 @@ public class Util {
     }
   }
 
-  public static <T> String getConnectorMsg(String prefixMsg, String name, String version, Map<String, String> props) {
+  public static <T> String getConnectorMsg(String prefixMsg, String name, String version) {
     String msg = String.format("%s %s, version=%s", prefixMsg, name, version);
-    if (props != null) {
-      msg = String.format("%s, props=%s", msg, props.toString());
-    }
     return msg;
   }
 }

@@ -52,7 +52,7 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void start(Map<String, String> props) {
-    log.info(Util.getConnectorMsg("start connector", props.get(NAME_CONFIG), version(), props));
+    log.info(Util.getConnectorMsg("start connector", props.get(NAME_CONFIG), version()));
 
     AbstractConfig parsedConfig = new AbstractConfig(CONFIG_DEF, props);
     name = parsedConfig.getString(NAME_CONFIG);
@@ -101,7 +101,7 @@ public class FileStreamSourceConnector extends SourceConnector {
 
   @Override
   public void stop() {
-    log.info(Util.getConnectorMsg("stop connector", name, version(), null));
+    log.info(Util.getConnectorMsg("stop connector", name, version()));
   }
 
 }
