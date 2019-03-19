@@ -57,6 +57,7 @@ public class FileWriter {
       Field f = it.next();
       StringBuilder b = new StringBuilder(String.format("%s:%s", f.name(), struct.get(f)));
       while (it.hasNext()) {
+        f = it.next();
         b.append(",").append(String.format("%s:%s", f.name(), struct.get(f)));
       }
       return b.toString();

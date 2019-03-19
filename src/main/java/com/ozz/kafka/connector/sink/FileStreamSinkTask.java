@@ -71,6 +71,7 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void stop() {
     log.info(Util.getConnectorMsg("stop task", name, version()));
+    fileWriter = null;
   }
 
   /**
