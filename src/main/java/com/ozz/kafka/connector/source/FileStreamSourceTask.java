@@ -34,6 +34,8 @@ public class FileStreamSourceTask extends SourceTask {
   public static final String POSITION_FIELD = "position";
   private static Schema KEY_SCHEMA;
   private static Schema VALUE_SCHEMA;
+//  private static org.apache.avro.Schema VALUE_SCHEMA;
+//  private AvroData avroData = new AvroData(1);
 
   private String name;
   private String filename;
@@ -48,7 +50,14 @@ public class FileStreamSourceTask extends SourceTask {
     super.initialize(context);
 
     KEY_SCHEMA = Schema.STRING_SCHEMA;
-    VALUE_SCHEMA = SchemaBuilder.struct().field("content", Schema.STRING_SCHEMA).build();
+    VALUE_SCHEMA = SchemaBuilder.struct().field("content", Schema.STRING_SCHEMA).field("ts", Schema.INT64_SCHEMA).build();
+
+    //    org.apache.avro.Schema.Parser parser = new org.apache.avro.Schema.Parser();
+//    VALUE_SCHEMA = parser.parse("{\"type\": \"record\", \"name\": \"fileContent\", \"fields\": [{\"name\": \"content\", \"type\": \"string\"}]}");
+//    RecordBuilder<org.apache.avro.Schema> v = org.apache.avro.SchemaBuilder.record("fileContent");
+//    FieldAssembler<org.apache.avro.Schema> f = v.fields();
+//    f.requiredString("content");
+//    VALUE_SCHEMA = f.endRecord();
   }
 
   @Override
@@ -109,15 +118,17 @@ public class FileStreamSourceTask extends SourceTask {
         sourceOffset++;
         log.info("task {}: read file {}, partition:{}, line {}: {}", name, path.getFileName(), partition, sourceOffset, line);
 
+        SourceRecord record = new SourceRecord(offsetKey(topic, filename), offsetValue(sourceOffset), topic, partition,
+                                  KEY_SCHEMA, String.format("%s,%d", path.getFileName(), sourceOffset), VALUE_SCHEMA, new Struct(VALUE_SCHEMA).put("content", line).put("ts", System.currentTimeMillis()));
+
+//        GenericRecord gr = new GenericData.Record(VALUE_SCHEMA);
+//        gr.put("content", line);
+//        SchemaAndValue sv = avroData.toConnectData(VALUE_SCHEMA, gr);
+//        SourceRecord record = new SourceRecord(offsetKey(topic, filename), offsetValue(sourceOffset), topic, partition
+//                                  , KEY_SCHEMA, String.format("%s,%d", path.getFileName(), sourceOffset), sv.schema(), sv.value(), System.currentTimeMillis());
+
         // commit
-        records.add(new SourceRecord(offsetKey(topic, filename),
-                                     offsetValue(sourceOffset),
-                                     topic,
-                                     partition,
-                                     KEY_SCHEMA,
-                                     String.format("%s,%d", path.getFileName(), sourceOffset),
-                                     VALUE_SCHEMA,
-                                     new Struct(VALUE_SCHEMA).put("content", line)));
+        records.add(record);
       }
 
       if (records.isEmpty()) {

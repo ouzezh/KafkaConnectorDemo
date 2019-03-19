@@ -29,8 +29,6 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void initialize(SinkTaskContext context) {
     super.initialize(context);
-
-    fileWriter = new FileWriter();
   }
 
   @Override
@@ -44,6 +42,8 @@ public class FileStreamSinkTask extends SinkTask {
 
     name = props.get(FileStreamSinkConnector.NAME_CONFIG);
     filename = props.get(FileStreamSinkConnector.FILE_CONFIG);
+
+    fileWriter = new FileWriter();
   }
 
   @Override

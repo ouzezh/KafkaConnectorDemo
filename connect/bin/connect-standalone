@@ -54,8 +54,6 @@ if [ "x$KAFKA_LOG4J_OPTS" = "x" ]; then
 fi
 export KAFKA_LOG4J_OPTS
 
-
-
 if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
   export KAFKA_HEAP_OPTS="-Xms256M -Xmx2G"
 fi
