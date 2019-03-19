@@ -49,6 +49,7 @@ public class FileStreamSinkTask extends SinkTask {
   @Override
   public void put(Collection<SinkRecord> records) {
     if(records.isEmpty()) {
+      Util.sleep();
       return;
     }
 
