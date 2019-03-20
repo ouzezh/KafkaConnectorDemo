@@ -51,13 +51,6 @@ public class FileStreamSourceTask extends SourceTask {
 
     KEY_SCHEMA = Schema.STRING_SCHEMA;
     VALUE_SCHEMA = SchemaBuilder.struct().field("content", Schema.STRING_SCHEMA).field("ts", Schema.INT64_SCHEMA).build();
-
-    //    org.apache.avro.Schema.Parser parser = new org.apache.avro.Schema.Parser();
-//    VALUE_SCHEMA = parser.parse("{\"type\": \"record\", \"name\": \"fileContent\", \"fields\": [{\"name\": \"content\", \"type\": \"string\"}]}");
-//    RecordBuilder<org.apache.avro.Schema> v = org.apache.avro.SchemaBuilder.record("fileContent");
-//    FieldAssembler<org.apache.avro.Schema> f = v.fields();
-//    f.requiredString("content");
-//    VALUE_SCHEMA = f.endRecord();
   }
 
   @Override
@@ -120,12 +113,6 @@ public class FileStreamSourceTask extends SourceTask {
 
         SourceRecord record = new SourceRecord(offsetKey(topic, filename), offsetValue(sourceOffset), topic, partition,
                                   KEY_SCHEMA, String.format("%s,%d", path.getFileName(), sourceOffset), VALUE_SCHEMA, new Struct(VALUE_SCHEMA).put("content", line).put("ts", System.currentTimeMillis()));
-
-//        GenericRecord gr = new GenericData.Record(VALUE_SCHEMA);
-//        gr.put("content", line);
-//        SchemaAndValue sv = avroData.toConnectData(VALUE_SCHEMA, gr);
-//        SourceRecord record = new SourceRecord(offsetKey(topic, filename), offsetValue(sourceOffset), topic, partition
-//                                  , KEY_SCHEMA, String.format("%s,%d", path.getFileName(), sourceOffset), sv.schema(), sv.value(), System.currentTimeMillis());
 
         // commit
         records.add(record);
