@@ -22,19 +22,16 @@ public class ConsumerTest {
     props.put("key.deserializer", StringDeserializer.class.getName());
     props.put("value.deserializer", KafkaAvroDeserializer.class.getName());
     props.put("schema.registry.url", "http://10.15.4.165:8181");
-    KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);
 
-    consumer.subscribe(Collections.singletonList("dev-registry"));
+    try (KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);) {
+      consumer.subscribe(Collections.singletonList("dev-registry"));
 
-    try {
       while (true) {
         ConsumerRecords<String, GenericRecord> records = consumer.poll(1000);
         for (ConsumerRecord<String, GenericRecord> record : records) {
           System.out.println(String.format("poll record: %S", parseRecord(record)));
         }
       }
-    } finally {
-      consumer.close();
     }
   }
 
