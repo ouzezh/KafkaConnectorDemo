@@ -12,13 +12,16 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
+
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 
 public class ProducerTest {
   public static void main(String[] args) throws Exception {
     Properties props = new Properties();
     props.put("bootstrap.servers", "tnode-2:9092,tnode-3:9092,tnode-4:9092");
-    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-    props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+    props.put("key.serializer", StringSerializer.class.getName());
+    props.put("value.serializer", KafkaAvroSerializer.class.getName());
     props.put("schema.registry.url", "http://10.15.4.165:8181");
 
     try (Producer<String, GenericRecord> producer = new KafkaProducer<>(props);) {
