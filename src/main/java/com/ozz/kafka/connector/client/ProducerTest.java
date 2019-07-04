@@ -28,6 +28,7 @@ public class ProducerTest {
     props.put("schema.registry.url", "http://10.15.4.165:8181");
 
     try (Producer<String, GenericRecord> producer = new KafkaProducer<>(props);) {
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> producer.close()));
 
       // Schema.Parser parser = new Schema.Parser();
       // Schema schema = parser.parse("{\"type\": \"record\", \"name\": \"User\", " + "\"fields\":

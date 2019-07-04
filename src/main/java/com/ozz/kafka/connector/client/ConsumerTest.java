@@ -24,8 +24,9 @@ public class ConsumerTest {
     props.put("schema.registry.url", "http://10.15.4.165:8181");
 
     try (KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);) {
-      consumer.subscribe(Collections.singletonList("dev-registry"));
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> consumer.close()));
 
+      consumer.subscribe(Collections.singletonList("dev-registry"));
       while (true) {
         ConsumerRecords<String, GenericRecord> records = consumer.poll(1000);
         for (ConsumerRecord<String, GenericRecord> record : records) {
