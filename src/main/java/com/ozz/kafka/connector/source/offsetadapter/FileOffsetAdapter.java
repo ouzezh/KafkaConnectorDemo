@@ -37,35 +37,33 @@ public class FileOffsetAdapter implements Closeable {
 
   public static void main(String[] args) throws Exception {
     String connectorName = "localtest_source";
-    String file = "C:\\Users\\ouzezhou\\Desktop\\connect.offsets";
+    String offsetsFile = "C:\\Users\\ouzezhou\\Desktop\\connect.offsets";
 
+    printOffsets(connectorName, offsetsFile);
+
+    // put offset
     ObjectMapper objectMapper = new ObjectMapper();
-
-    try (FileOffsetAdapter adapter = new FileOffsetAdapter(connectorName, file);) {
-      // read offsets
-      Map<Map<String, Object>, Map<String, Object>> offsets = adapter.offsets();
-      System.out.println(String.format("before put: %d", offsets.size()));
-      for (Entry<Map<String, Object>, Map<String, Object>> en : offsets.entrySet()) {
-        System.out.println(String.format("%s = %s", en.getKey(), en.getValue()));
-      }
-
-      // put offset
+    try (FileOffsetAdapter adapter = new FileOffsetAdapter(connectorName, offsetsFile);) {
       Map<String, String> partition = objectMapper.readValue("{\"topic\":\"connect-test\",\"file\":\"xxx\"}", new TypeReference<HashMap<String, String>>() {});
-      List<Pair<Map<String, String>, Map<String, Long>>> list = new ArrayList<>();
       Map<String, Long> offset = objectMapper.readValue(String.format("{\"position\":%s}", System.currentTimeMillis()),
                                                         new TypeReference<HashMap<String, Long>>() {});
-      list.add(Pair.of(partition, offset));
-      adapter.put(list);
+      adapter.put(Collections.singletonList(Pair.of(partition, offset)));
     }
 
-    try (FileOffsetAdapter adapter = new FileOffsetAdapter(connectorName, file);) {
+    printOffsets(connectorName, offsetsFile);
+  }
+
+  private static void printOffsets(String connectorName, String offsetsFile) {
+    try (FileOffsetAdapter adapter = new FileOffsetAdapter(connectorName, offsetsFile);) {
       // read offsets
       Map<Map<String, String>, Map<String, Object>> offsets = adapter.offsets();
-      System.out.println(String.format("after put: %d", offsets.size()));
+      System.out.println(String.format("--print start, size=%d--", offsets.size()));
       for (Entry<Map<String, String>, Map<String, Object>> en : offsets.entrySet()) {
         System.out.println(String.format("%s = %s", en.getKey(), en.getValue()));
       }
+      System.out.println(String.format("--print end, size=%d--", offsets.size()));
     }
+    System.out.println();
   }
 
   public FileOffsetAdapter(String connectorName, String file) {
@@ -110,9 +108,9 @@ public class FileOffsetAdapter implements Closeable {
     return offsetReader.offsets(offsetStore.partitions());
   }
 
-  public <T, U> void put(List<Pair<Map<String, T>, Map<String, U>>> list) {
+  public <T, U> void put(List<Pair<Map<String, T>, Map<String, U>>> offsets) {
     Map<ByteBuffer, ByteBuffer> values = new HashMap<>();
-    for (Pair<Map<String, T>, Map<String, U>> item : list) {
+    for (Pair<Map<String, T>, Map<String, U>> item : offsets) {
       Map<String, T> partition = item.getKey();
       Map<String, U> offset = item.getValue();
       values.put(toByteBuffer(keyConverter, partition, true), toByteBuffer(valueConverter, offset, false));
