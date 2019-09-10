@@ -16,8 +16,11 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.CreateAclsResult;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.DeleteAclsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
+import org.apache.kafka.clients.admin.DescribeAclsResult;
 import org.apache.kafka.clients.admin.DescribeConsumerGroupsResult;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
@@ -33,6 +36,16 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.acl.AccessControlEntry;
+import org.apache.kafka.common.acl.AccessControlEntryFilter;
+import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.acl.AclBindingFilter;
+import org.apache.kafka.common.acl.AclOperation;
+import org.apache.kafka.common.acl.AclPermissionType;
+import org.apache.kafka.common.resource.PatternType;
+import org.apache.kafka.common.resource.ResourcePattern;
+import org.apache.kafka.common.resource.ResourcePatternFilter;
+import org.apache.kafka.common.resource.ResourceType;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 public class AdminClientUtil implements Closeable {
@@ -40,22 +53,29 @@ public class AdminClientUtil implements Closeable {
 
   public static void main(String[] args) {
     try (AdminClientUtil adminClient = new AdminClientUtil("tnode-2:9092,tnode-3:9092,tnode-4:9092")) {
-      Runtime.getRuntime().addShutdownHook(new Thread(()->adminClient.close()));
-//      List<String> list = adminClient.listTopics();
-//      System.out.println(list.size());
-//
-//      adminClient.createTopics("ou_test", 3, (short) 3);
-//
-//      TopicDescription td = adminClient.describeTopics("ou_test");
-//      adminClient.getTopicOffset(td);
-//
-//      adminClient.deleteTopics(Collections.singleton("ou_test"));
-//
-//      System.out.println(adminClient.listConsumerGroups());
-//
-//      adminClient.describeConsumerGroups(Collections.singleton("connect-sink-inst-mdm"));
-//
-//      adminClient.listConsumerGroupOffsets("connect-database-sink-bm3-qenv2");
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> adminClient.close()));
+      // List<String> list = adminClient.listTopics();
+      // System.out.println(list.size());
+      //
+      // adminClient.createTopics("ou_test", 3, (short) 3);
+      //
+      // TopicDescription td = adminClient.describeTopics("ou_test");
+      // adminClient.getTopicOffset(td);
+      //
+      // adminClient.deleteTopics(Collections.singleton("ou_test"));
+      //
+      // System.out.println(adminClient.listConsumerGroups());
+      //
+      // adminClient.describeConsumerGroups(Collections.singleton("connect-sink-inst-mdm"));
+      //
+      // adminClient.listConsumerGroupOffsets("connect-database-sink-bm3-qenv2");
+
+      // adminClient.createAcl(ResourceType.TOPIC, "ou_test", "User:ANONYMOUS", "10.200.79.172",
+      // AclOperation.READ);
+      //
+      // adminClient.describeAcls(ResourceType.TOPIC, "ou_test");
+
+      adminClient.deleteAcls(ResourceType.TOPIC, "ou_test", "User:ANONYMOUS", "10.200.79.172", AclOperation.READ);
     }
   }
 
@@ -197,14 +217,73 @@ public class AdminClientUtil implements Closeable {
     try (KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> consumer.close()));
       Collection<TopicPartition> partitions = new ArrayList<>();
-      td.partitions().forEach((item)->partitions.add(new TopicPartition(td.name(), item.partition())));
+      td.partitions().forEach((item) -> partitions.add(new TopicPartition(td.name(), item.partition())));
       consumer.assign(partitions);
       consumer.seekToEnd(partitions);
       System.out.println(String.format("topic:%s", td.name()));
-      for(TopicPartition p : partitions) {
+      for (TopicPartition p : partitions) {
         long offset = consumer.position(p);
         System.out.println(String.format("\tpartitions:%s, offset:%s", p.partition(), offset));
       }
+    }
+  }
+
+  /**
+   * @param principal 用户，如：User:ANONYMOUS
+   */
+  public void createAcl(ResourceType resourceType, String name, String principal, String host, AclOperation aclOperation) {
+    try {
+      ResourcePattern resource = new ResourcePattern(resourceType, name, PatternType.LITERAL);
+      AccessControlEntry entry = new AccessControlEntry(principal, host, aclOperation, AclPermissionType.ALLOW);
+      Collection<AclBinding> acls = Collections.singleton(new AclBinding(resource, entry));
+      CreateAclsResult res = adminClient.createAcls(acls);
+      KafkaFuture<Void> f = res.all();
+      f.get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void describeAcls(ResourceType resourceType, String name) {
+    try {
+      PatternType patternType = PatternType.ANY;
+      ResourcePatternFilter patternFilter = new ResourcePatternFilter(resourceType, name, patternType);
+      AclBindingFilter filter = new AclBindingFilter(patternFilter, AccessControlEntryFilter.ANY);
+      DescribeAclsResult res = adminClient.describeAcls(filter);
+      KafkaFuture<Collection<AclBinding>> f = res.values();
+      Collection<AclBinding> acls = f.get();
+      for (AclBinding acl : acls) {
+        System.out.println(String.format("%s:%s:%s", acl.pattern().resourceType(), acl.pattern().name(), acl.pattern().patternType()));
+        System.out.println(String.format("\t%s has %s permission for operations: %s from hosts: %s",
+                                         acl.entry().principal(),
+                                         acl.entry().permissionType(),
+                                         acl.entry().operation(),
+                                         acl.entry().host()));
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void deleteAcls(ResourceType resourceType, String name, String principal, String host, AclOperation aclOperation) {
+    try {
+      PatternType patternType = PatternType.ANY;
+      ResourcePatternFilter patternFilter = new ResourcePatternFilter(resourceType, name, patternType);
+      AccessControlEntryFilter entryFilter = new AccessControlEntryFilter(principal, host, aclOperation, AclPermissionType.ALLOW);
+      AclBindingFilter filter = new AclBindingFilter(patternFilter, entryFilter);
+      DeleteAclsResult res = adminClient.deleteAcls(Collections.singleton(filter));
+      KafkaFuture<Collection<AclBinding>> f = res.all();
+      Collection<AclBinding> acls = f.get();
+      for (AclBinding acl : acls) {
+        System.out.println(String.format("%s:%s:%s", acl.pattern().resourceType(), acl.pattern().name(), acl.pattern().patternType()));
+        System.out.println(String.format("\t%s has %s permission for operations: %s from hosts: %s",
+                                         acl.entry().principal(),
+                                         acl.entry().permissionType(),
+                                         acl.entry().operation(),
+                                         acl.entry().host()));
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
     }
   }
 }
