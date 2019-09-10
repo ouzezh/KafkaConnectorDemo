@@ -22,10 +22,10 @@ public class ProducerTest {
     props.put("bootstrap.servers", "tnode-2:9092,tnode-3:9092,tnode-4:9092");
     props.put("key.serializer", StringSerializer.class.getName());
     props.put("value.serializer", KafkaAvroSerializer.class.getName());
+    props.put("schema.registry.url", "http://10.15.4.165:8181");// 与KafkaAvroSerializer配合使用
     props.put("retries", 5);
     props.put("acks", "all");
     props.put("max.in.flight.requests.per.connection", 1);
-    props.put("schema.registry.url", "http://10.15.4.165:8181");
 
     try (Producer<String, GenericRecord> producer = new KafkaProducer<>(props);) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> producer.close()));
