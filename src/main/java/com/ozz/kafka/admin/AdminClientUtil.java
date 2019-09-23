@@ -52,7 +52,7 @@ public class AdminClientUtil implements Closeable {
 
 
   public static void main(String[] args) {
-    String bootstrapServers = "tnode-2:9092";
+    String bootstrapServers = "tnode-2:9092,tnode-3:9092,tnode-4:9092";
     try (AdminClientUtil adminClient = new AdminClientUtil(bootstrapServers)) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> adminClient.close()));
       // List<String> list = adminClient.listTopics();
@@ -208,7 +208,7 @@ public class AdminClientUtil implements Closeable {
     }
   }
 
-  public void getTopicOffset(String bootstrapServers, Collection<TopicPartition> partitions) {
+  public Map<TopicPartition, Long> getTopicOffset(String bootstrapServers, Collection<TopicPartition> partitions) {
     Properties props = new Properties();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, String.format("test-%s", RandomUtils.nextLong()));
@@ -222,6 +222,7 @@ public class AdminClientUtil implements Closeable {
       for (Entry<TopicPartition, Long> en : offsets.entrySet()) {
         System.out.println(String.format("topic:%s\tpartitions:%s, offset:%s", en.getKey().topic(), en.getKey().partition(), en.getValue()));
       }
+      return offsets; 
     }
   }
 
