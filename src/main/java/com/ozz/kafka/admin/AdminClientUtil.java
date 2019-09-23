@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -60,8 +59,8 @@ public class AdminClientUtil implements Closeable {
       //
       // adminClient.createTopics("ou_test", 3, (short) 1);
       //
-      TopicDescription td = adminClient.describeTopics("ou_test");
-      adminClient.getTopicOffset(td);
+//      adminClient.describeTopics("ou_test");
+      adminClient.getTopicOffset(Collections.singleton(new TopicPartition("ou_test", 0)));
       //
       // adminClient.deleteTopics(Collections.singleton("ou_test"));
       //
@@ -208,7 +207,7 @@ public class AdminClientUtil implements Closeable {
     }
   }
 
-  public void getTopicOffset(TopicDescription td) {
+  public void getTopicOffset(Collection<TopicPartition> partitions) {
     Properties props = new Properties();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "tnode-2:9092,tnode-3:9092,tnode-4:9092");
     props.put(ConsumerConfig.GROUP_ID_CONFIG, String.format("test-%s", RandomUtils.nextLong()));
@@ -216,14 +215,11 @@ public class AdminClientUtil implements Closeable {
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-    try (KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);) {
+    try (KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props);) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> consumer.close()));
-      Collection<TopicPartition> partitions = new ArrayList<>();
-      td.partitions().forEach((item) -> partitions.add(new TopicPartition(td.name(), item.partition())));
       Map<TopicPartition, Long> offsets = consumer.endOffsets(partitions);
-      System.out.println(String.format("topic:%s", td.name()));
       for (Entry<TopicPartition, Long> en : offsets.entrySet()) {
-        System.out.println(String.format("\tpartitions:%s, offset:%s", en.getKey().partition(), en.getValue()));
+        System.out.println(String.format("topic:%s\tpartitions:%s, offset:%s", en.getKey().topic(), en.getKey().partition(), en.getValue()));
       }
     }
   }
