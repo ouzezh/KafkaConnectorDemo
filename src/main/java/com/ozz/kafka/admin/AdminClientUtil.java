@@ -46,21 +46,22 @@ import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 public class AdminClientUtil implements Closeable {
   AdminClient adminClient;
 
+
   public static void main(String[] args) {
-    try (AdminClientUtil adminClient = new AdminClientUtil("tnode-2:9092,tnode-3:9092,tnode-4:9092")) {
+    try (AdminClientUtil adminClient = new AdminClientUtil("tnode-2:9092")) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> adminClient.close()));
       // List<String> list = adminClient.listTopics();
       // System.out.println(list.size());
       //
-      // adminClient.createTopics("ou_test", 3, (short) 3);
+      // adminClient.createTopics("ou_test", 3, (short) 1);
       //
-      // TopicDescription td = adminClient.describeTopics("ou_test");
-      // adminClient.getTopicOffset(td);
+      TopicDescription td = adminClient.describeTopics("ou_test");
+      adminClient.getTopicOffset(td);
       //
       // adminClient.deleteTopics(Collections.singleton("ou_test"));
       //
@@ -69,13 +70,14 @@ public class AdminClientUtil implements Closeable {
       // adminClient.describeConsumerGroups(Collections.singleton("connect-sink-inst-mdm"));
       //
       // adminClient.listConsumerGroupOffsets("connect-database-sink-bm3-qenv2");
-
+      //
       // adminClient.createAcl(ResourceType.TOPIC, "ou_test", "User:ANONYMOUS", "10.200.79.172",
       // AclOperation.READ);
       //
       // adminClient.describeAcls(ResourceType.TOPIC, "ou_test");
 
-      adminClient.deleteAcls(ResourceType.TOPIC, "ou_test", "User:ANONYMOUS", "10.200.79.172", AclOperation.READ);
+      // adminClient.deleteAcls(ResourceType.TOPIC, "ou_test", "User:ANONYMOUS", "10.200.79.172",
+      // AclOperation.READ);
     }
   }
 
@@ -117,7 +119,7 @@ public class AdminClientUtil implements Closeable {
         List<TopicPartitionInfo> ps = td.partitions();
         System.out.println(String.format("Topic:%s PartitionCount:%s", en.getKey(), td.partitions().size()));
         for (TopicPartitionInfo p : ps) {
-          System.out.println(String.format("\tPartition:%s  Leader:%s Replicas: 4,2,3 Isr: 4,2,3", p.partition(), p.leader().id(), p.replicas(), p.isr()));
+          System.out.println(String.format("\tPartition:%s  Leader:%s Replicas: %s Isr: %s", p.partition(), p.leader().id(), p.replicas(), p.isr()));
         }
       }
       return td;
@@ -175,7 +177,7 @@ public class AdminClientUtil implements Closeable {
       Map<String, ConsumerGroupDescription> fm = fl.get();
       for (Entry<String, ConsumerGroupDescription> en : fm.entrySet()) {
         ConsumerGroupDescription cd = en.getValue();
-        System.out.println(String.format("groupId:%s, coordinator:%s, state:%s, partitionAssignor:%s",
+        System.out.println(String.format("group:%s, coordinator:%s, state:%s, partitionAssignor:%s",
                                          en.getKey(),
                                          cd.coordinator(),
                                          cd.state(),
@@ -210,20 +212,18 @@ public class AdminClientUtil implements Closeable {
     Properties props = new Properties();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "tnode-2:9092,tnode-3:9092,tnode-4:9092");
     props.put(ConsumerConfig.GROUP_ID_CONFIG, String.format("test-%s", RandomUtils.nextLong()));
-    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
     try (KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> consumer.close()));
       Collection<TopicPartition> partitions = new ArrayList<>();
       td.partitions().forEach((item) -> partitions.add(new TopicPartition(td.name(), item.partition())));
-      consumer.assign(partitions);
-      consumer.seekToEnd(partitions);
+      Map<TopicPartition, Long> offsets = consumer.endOffsets(partitions);
       System.out.println(String.format("topic:%s", td.name()));
-      for (TopicPartition p : partitions) {
-        long offset = consumer.position(p);
-        System.out.println(String.format("\tpartitions:%s, offset:%s", p.partition(), offset));
+      for (Entry<TopicPartition, Long> en : offsets.entrySet()) {
+        System.out.println(String.format("\tpartitions:%s, offset:%s", en.getKey().partition(), en.getValue()));
       }
     }
   }
