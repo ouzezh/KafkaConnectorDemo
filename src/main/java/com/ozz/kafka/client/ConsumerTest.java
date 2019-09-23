@@ -1,4 +1,4 @@
-package com.ozz.kafka.connector.client;
+package com.ozz.kafka.client;
 
 import java.time.Duration;
 import java.util.Collections;

@@ -1,4 +1,4 @@
-package com.ozz.kafka.connector.client;
+package com.ozz.kafka.client;
 
 import java.util.Properties;
 import java.util.Random;
