@@ -52,7 +52,8 @@ public class AdminClientUtil implements Closeable {
 
 
   public static void main(String[] args) {
-    try (AdminClientUtil adminClient = new AdminClientUtil("tnode-2:9092")) {
+    String bootstrapServers = "tnode-2:9092";
+    try (AdminClientUtil adminClient = new AdminClientUtil(bootstrapServers)) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> adminClient.close()));
       // List<String> list = adminClient.listTopics();
       // System.out.println(list.size());
@@ -60,7 +61,7 @@ public class AdminClientUtil implements Closeable {
       // adminClient.createTopics("ou_test", 3, (short) 1);
       //
 //      adminClient.describeTopics("ou_test");
-      adminClient.getTopicOffset(Collections.singleton(new TopicPartition("ou_test", 0)));
+      adminClient.getTopicOffset(bootstrapServers, Collections.singleton(new TopicPartition("ou_test", 0)));
       //
       // adminClient.deleteTopics(Collections.singleton("ou_test"));
       //
@@ -207,9 +208,9 @@ public class AdminClientUtil implements Closeable {
     }
   }
 
-  public void getTopicOffset(Collection<TopicPartition> partitions) {
+  public void getTopicOffset(String bootstrapServers, Collection<TopicPartition> partitions) {
     Properties props = new Properties();
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "tnode-2:9092,tnode-3:9092,tnode-4:9092");
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, String.format("test-%s", RandomUtils.nextLong()));
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
