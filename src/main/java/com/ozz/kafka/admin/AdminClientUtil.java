@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,6 +34,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.acl.AccessControlEntry;
@@ -52,7 +55,7 @@ public class AdminClientUtil implements Closeable {
 
 
   public static void main(String[] args) {
-    String bootstrapServers = "tnode-2:9092,tnode-3:9092,tnode-4:9092";
+    String bootstrapServers = "10.15.4.150:9092,10.15.4.150:9093";
     try (AdminClientUtil adminClient = new AdminClientUtil(bootstrapServers)) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> adminClient.close()));
       // List<String> list = adminClient.listTopics();
@@ -61,11 +64,11 @@ public class AdminClientUtil implements Closeable {
       // adminClient.createTopics("ou_test", 3, (short) 1);
       //
 //      adminClient.describeTopics("ou_test");
-      adminClient.getTopicOffset(bootstrapServers, Collections.singleton(new TopicPartition("ou_test", 0)));
+//      adminClient.getTopicOffset(bootstrapServers, Collections.singleton(new TopicPartition("ou_test", 0)));
       //
       // adminClient.deleteTopics(Collections.singleton("ou_test"));
       //
-      // System.out.println(adminClient.listConsumerGroups());
+//       System.out.println(adminClient.listConsumerGroups());
       //
       // adminClient.describeConsumerGroups(Collections.singleton("connect-sink-inst-mdm"));
       //
@@ -109,20 +112,22 @@ public class AdminClientUtil implements Closeable {
     }
   }
 
-  public TopicDescription describeTopics(String topic) {
+  public Map<String, TopicDescription> describeTopics(Collection<String> topics) {
     try {
-      DescribeTopicsResult res = adminClient.describeTopics(Collections.singleton(topic));
+      DescribeTopicsResult res = adminClient.describeTopics(topics);
       Map<String, KafkaFuture<TopicDescription>> f = res.values();
-      TopicDescription td = null;
+      Map<String, TopicDescription> map = new HashMap<>();
+      TopicDescription td;
       for (Entry<String, KafkaFuture<TopicDescription>> en : f.entrySet()) {
         td = en.getValue().get();
         List<TopicPartitionInfo> ps = td.partitions();
+        map.put(en.getKey(), td);
         System.out.println(String.format("Topic:%s PartitionCount:%s", en.getKey(), td.partitions().size()));
         for (TopicPartitionInfo p : ps) {
           System.out.println(String.format("\tPartition:%s  Leader:%s Replicas: %s Isr: %s", p.partition(), p.leader().id(), p.replicas(), p.isr()));
         }
       }
-      return td;
+      return map;
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -175,6 +180,7 @@ public class AdminClientUtil implements Closeable {
       DescribeConsumerGroupsResult res = adminClient.describeConsumerGroups(groupIds);
       KafkaFuture<Map<String, ConsumerGroupDescription>> fl = res.all();
       Map<String, ConsumerGroupDescription> fm = fl.get();
+
       for (Entry<String, ConsumerGroupDescription> en : fm.entrySet()) {
         ConsumerGroupDescription cd = en.getValue();
         System.out.println(String.format("group:%s, coordinator:%s, state:%s, partitionAssignor:%s",
@@ -192,7 +198,7 @@ public class AdminClientUtil implements Closeable {
     }
   }
 
-  public void listConsumerGroupOffsets(String groupId) {
+  public Map<TopicPartition, OffsetAndMetadata> listConsumerGroupOffsets(String groupId) {
     try {
       ListConsumerGroupOffsetsResult res = adminClient.listConsumerGroupOffsets(groupId);
       KafkaFuture<Map<TopicPartition, OffsetAndMetadata>> f = res.partitionsToOffsetAndMetadata();
@@ -203,6 +209,7 @@ public class AdminClientUtil implements Closeable {
         OffsetAndMetadata o = en.getValue();
         System.out.println(String.format("\ttopic:%s, partition:%s, offset:%s", p.topic(), p.partition(), o.offset()));
       }
+      return om;
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
