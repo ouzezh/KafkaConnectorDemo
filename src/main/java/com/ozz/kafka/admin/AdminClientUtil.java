@@ -61,8 +61,8 @@ public class AdminClientUtil implements Closeable {
       //
       // adminClient.createTopics("ou_test", 3, (short) 1);
       //
-//      adminClient.describeTopics("ou_test");
-//      adminClient.getTopicOffset(bootstrapServers, Collections.singleton(new TopicPartition("ou_test", 0)));
+//      adminClient.describeTopics(Collections.singleton("ou_test"));
+      adminClient.getTopicOffset(bootstrapServers, Collections.singleton(new TopicPartition("ss_bs_student", 0)));
       //
       // adminClient.deleteTopics(Collections.singleton("ou_test"));
       //
