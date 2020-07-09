@@ -63,9 +63,8 @@ public class FileStreamSinkTask extends SinkTask {
    */
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> currentOffsets) {
+	fileWriter.flush();
     super.flush(currentOffsets);
-
-    fileWriter.flush();
   }
 
   @Override
