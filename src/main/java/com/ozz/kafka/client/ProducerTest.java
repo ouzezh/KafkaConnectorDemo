@@ -9,9 +9,11 @@ import org.apache.avro.SchemaBuilder.FieldAssembler;
 import org.apache.avro.SchemaBuilder.RecordBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -55,7 +57,17 @@ public class ProducerTest {
 
         ProducerRecord<String, GenericRecord> record = new ProducerRecord<>("dev-registry", user);
 
-        producer.send(record);
+        int finalId = id;
+        producer.send(record, new Callback() {
+          @Override
+          public void onCompletion(RecordMetadata metadata, Exception e) {
+            if(e != null) {
+              e.printStackTrace();
+            } else {
+              System.out.println(String.format("callback %s: topic=%s, partition=%s, offset:%s", finalId, metadata.topic(), metadata.partition(), metadata.offset()));
+            }
+          }
+        });
         Thread.sleep(1000);
       }
     }
