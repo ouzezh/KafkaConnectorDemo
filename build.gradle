@@ -7,7 +7,6 @@ version '1.0-SNAPSHOT'
 
 repositories {
     mavenLocal()
-//    maven { url 'http://nexus.staff.xdf.cn/repository/public' }
     maven { url 'https://maven.aliyun.com/repository/central' }
     maven { url 'https://maven.aliyun.com/repository/public' }
     maven { url 'https://maven.aliyun.com/repository/google' }
