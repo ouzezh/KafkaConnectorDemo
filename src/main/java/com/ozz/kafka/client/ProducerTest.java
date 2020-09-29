@@ -1,8 +1,10 @@
 package com.ozz.kafka.client;
 
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.util.Properties;
 import java.util.Random;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.SchemaBuilder.FieldAssembler;
@@ -15,8 +17,6 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
-
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 
 public class ProducerTest {
   public static void main(String[] args) throws Exception {
@@ -44,10 +44,10 @@ public class ProducerTest {
       Schema schema = f.endRecord();
 
       Random rand = new Random();
-      int id = 0;
 
-      while (id < 10) {
-        id++;
+      int count = 10;
+      CountDownLatch cdl = new CountDownLatch(count);
+      for(int id=1; id<=count; id++) {
         String name = "name" + id;
         int age = rand.nextInt(40) + 1;
         GenericRecord user = new GenericData.Record(schema);
@@ -55,7 +55,7 @@ public class ProducerTest {
         user.put("name", name);
         user.put("age", age);
 
-        ProducerRecord<String, GenericRecord> record = new ProducerRecord<>("dev-registry", user);
+        ProducerRecord<String, GenericRecord> record = new ProducerRecord<>("dev-test", user);
 
         int finalId = id;
         producer.send(record, new Callback() {
@@ -64,12 +64,20 @@ public class ProducerTest {
             if(e != null) {
               e.printStackTrace();
             } else {
+              cdl.countDown();
               System.out.println(String.format("callback %s: topic=%s, partition=%s, offset:%s", finalId, metadata.topic(), metadata.partition(), metadata.offset()));
             }
           }
         });
         Thread.sleep(1000);
       }
+      producer.flush();
+      if(cdl.await(30, TimeUnit.SECONDS)) {
+        System.out.println("records submitted");
+      } else {
+        System.out.println("records submit error, see the callback log for more information");
+      }
     }
   }
+
 }
