@@ -1,11 +1,8 @@
 package com.ozz.kafka.connector.sink;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
+import cn.hutool.log.StaticLog;
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -14,8 +11,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.connect.json.JsonDeserializer;
 import org.apache.kafka.connect.sink.SinkRecord;
 
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
-import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import java.util.*;
 
 public class FileStreamSinkConnectorTest {
   private FileStreamSinkTask task;
@@ -56,7 +52,7 @@ public class FileStreamSinkConnectorTest {
         long starttime = System.currentTimeMillis();
         ConsumerRecords<String, GenericRecord> records = consumer.poll(10000);
         testPut(records);
-        System.out.println(String.format("test put %d, count %d, cost %dms", i + 1, records.count(), System.currentTimeMillis() - starttime));
+        StaticLog.info(String.format("test put %d, count %d, cost %dms", i + 1, records.count(), System.currentTimeMillis() - starttime));
         Thread.sleep(5000);
       }
     } finally {
@@ -78,7 +74,7 @@ public class FileStreamSinkConnectorTest {
   private void testPut(ConsumerRecords<String, GenericRecord> records) {
     for (ConsumerRecord<String, GenericRecord> item : records) {
       SinkRecord record = new SinkRecord(item.topic(), item.partition(), null, item.key(), null, item.value(), item.offset());
-      System.out.println(String.format("topic:%s, partition:%d, offset:%d, key:%s , value:%s",
+      StaticLog.info(String.format("topic:%s, partition:%d, offset:%d, key:%s , value:%s",
                                        record.topic(),
                                        record.kafkaPartition(),
                                        record.kafkaOffset(),

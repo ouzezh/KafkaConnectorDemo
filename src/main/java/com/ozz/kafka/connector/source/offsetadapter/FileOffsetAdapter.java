@@ -1,17 +1,9 @@
 package com.ozz.kafka.connector.source.offsetadapter;
 
-import java.io.Closeable;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.tuple.Pair;
+import cn.hutool.core.lang.Pair;
+import cn.hutool.log.StaticLog;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
@@ -24,8 +16,11 @@ import org.apache.kafka.connect.storage.FileOffsetBackingStore;
 import org.apache.kafka.connect.storage.OffsetStorageReaderImpl;
 import org.apache.kafka.connect.util.FutureCallback;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.Closeable;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 public class FileOffsetAdapter implements Closeable {
   private OffsetStorageReaderImpl offsetReader;
@@ -57,13 +52,12 @@ public class FileOffsetAdapter implements Closeable {
     try (FileOffsetAdapter adapter = new FileOffsetAdapter(connectorName, offsetsFile);) {
       // read offsets
       Map<Map<String, String>, Map<String, Object>> offsets = adapter.offsets();
-      System.out.println(String.format("--print start, size=%d--", offsets.size()));
+      StaticLog.info(String.format("--print start, size=%d--", offsets.size()));
       for (Entry<Map<String, String>, Map<String, Object>> en : offsets.entrySet()) {
-        System.out.println(String.format("%s = %s", en.getKey(), en.getValue()));
+        StaticLog.info(String.format("%s = %s", en.getKey(), en.getValue()));
       }
-      System.out.println(String.format("--print end, size=%d--", offsets.size()));
+      StaticLog.info(String.format("--print end, size=%d--", offsets.size()));
     }
-    System.out.println();
   }
 
   public FileOffsetAdapter(String connectorName, String file) {

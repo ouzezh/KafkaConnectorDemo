@@ -33,4 +33,4 @@ echo "test" >> /home/ouzezh/bigdata/data/connectors/in.log
 
 ## Springboot集成Kafka
 
-https://spring.io/projects/spring-kafka
+https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.messaging.kafka

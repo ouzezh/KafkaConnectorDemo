@@ -1,10 +1,7 @@
 package com.ozz.kafka.client;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Properties;
-
+import cn.hutool.log.StaticLog;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -13,7 +10,10 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
-import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Properties;
 
 public class ConsumerTest {
 
@@ -34,7 +34,7 @@ public class ConsumerTest {
       while (true) {
         ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofMinutes(1));
         for (ConsumerRecord<String, GenericRecord> record : records) {
-          System.out.println(String.format("poll record: %S", parseRecord(record)));
+          StaticLog.info(String.format("poll record: %S", parseRecord(record)));
         }
       }
     }

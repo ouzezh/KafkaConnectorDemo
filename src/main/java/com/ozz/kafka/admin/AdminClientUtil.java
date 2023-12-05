@@ -1,52 +1,26 @@
 package com.ozz.kafka.admin;
 
-import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-
-import org.apache.commons.lang3.RandomUtils;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.log.StaticLog;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.ConsumerGroupDescription;
-import org.apache.kafka.clients.admin.ConsumerGroupListing;
-import org.apache.kafka.clients.admin.CreateAclsResult;
-import org.apache.kafka.clients.admin.CreateTopicsResult;
-import org.apache.kafka.clients.admin.DeleteAclsResult;
-import org.apache.kafka.clients.admin.DeleteTopicsResult;
-import org.apache.kafka.clients.admin.DescribeAclsResult;
-import org.apache.kafka.clients.admin.DescribeConsumerGroupsResult;
-import org.apache.kafka.clients.admin.DescribeTopicsResult;
-import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
-import org.apache.kafka.clients.admin.ListConsumerGroupsResult;
-import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.clients.admin.MemberDescription;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.admin.TopicDescription;
-import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
-import org.apache.kafka.common.acl.AccessControlEntry;
-import org.apache.kafka.common.acl.AccessControlEntryFilter;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.acl.AclBindingFilter;
-import org.apache.kafka.common.acl.AclOperation;
-import org.apache.kafka.common.acl.AclPermissionType;
+import org.apache.kafka.common.acl.*;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+
+import java.io.Closeable;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 
 public class AdminClientUtil implements Closeable {
   AdminClient adminClient;
@@ -57,7 +31,7 @@ public class AdminClientUtil implements Closeable {
     try (AdminClientUtil adminClient = new AdminClientUtil(bootstrapServers)) {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> adminClient.close()));
       // List<String> list = adminClient.listTopics();
-      // System.out.println(list.size());
+      // StaticLog.info(list.size());
       //
       // adminClient.createTopics("ou_test", 3, (short) 1);
       //
@@ -66,7 +40,7 @@ public class AdminClientUtil implements Closeable {
       //
       // adminClient.deleteTopics(Collections.singleton("ou_test"));
       //
-//       System.out.println(adminClient.listConsumerGroups());
+//       StaticLog.info(adminClient.listConsumerGroups());
       //
       // adminClient.describeConsumerGroups(Collections.singleton("connect-sink-inst-mdm"));
       //
@@ -120,9 +94,9 @@ public class AdminClientUtil implements Closeable {
         td = en.getValue().get();
         List<TopicPartitionInfo> ps = td.partitions();
         map.put(en.getKey(), td);
-        System.out.println(String.format("Topic:%s PartitionCount:%s", en.getKey(), td.partitions().size()));
+        StaticLog.info(String.format("Topic:%s PartitionCount:%s", en.getKey(), td.partitions().size()));
         for (TopicPartitionInfo p : ps) {
-          System.out.println(String.format("\tPartition:%s  Leader:%s Replicas: %s Isr: %s", p.partition(), p.leader().id(), p.replicas(), p.isr()));
+          StaticLog.info(String.format("\tPartition:%s  Leader:%s Replicas: %s Isr: %s", p.partition(), p.leader().id(), p.replicas(), p.isr()));
         }
       }
       return map;
@@ -181,14 +155,14 @@ public class AdminClientUtil implements Closeable {
 
       for (Entry<String, ConsumerGroupDescription> en : fm.entrySet()) {
         ConsumerGroupDescription cd = en.getValue();
-        System.out.println(String.format("group:%s, coordinator:%s, state:%s, partitionAssignor:%s",
+        StaticLog.info(String.format("group:%s, coordinator:%s, state:%s, partitionAssignor:%s",
                                          en.getKey(),
                                          cd.coordinator(),
                                          cd.state(),
                                          cd.partitionAssignor()));
         Collection<MemberDescription> ml = cd.members();
         for (MemberDescription m : ml) {
-          System.out.println(String.format("\t%s", m.toString()));
+          StaticLog.info(String.format("\t%s", m.toString()));
         }
       }
     } catch (InterruptedException | ExecutionException e) {
@@ -201,11 +175,11 @@ public class AdminClientUtil implements Closeable {
       ListConsumerGroupOffsetsResult res = adminClient.listConsumerGroupOffsets(groupId);
       KafkaFuture<Map<TopicPartition, OffsetAndMetadata>> f = res.partitionsToOffsetAndMetadata();
       Map<TopicPartition, OffsetAndMetadata> om = f.get();
-      System.out.println(String.format("groupId:%s", groupId));
+      StaticLog.info(String.format("groupId:%s", groupId));
       for (Entry<TopicPartition, OffsetAndMetadata> en : om.entrySet()) {
         TopicPartition p = en.getKey();
         OffsetAndMetadata o = en.getValue();
-        System.out.println(String.format("\ttopic:%s, partition:%s, offset:%s", p.topic(), p.partition(), o.offset()));
+        StaticLog.info(String.format("\ttopic:%s, partition:%s, offset:%s", p.topic(), p.partition(), o.offset()));
       }
       return om;
     } catch (InterruptedException | ExecutionException e) {
@@ -216,7 +190,7 @@ public class AdminClientUtil implements Closeable {
   public Map<TopicPartition, Long> getTopicOffset(String bootstrapServers, Collection<TopicPartition> partitions) {
     Properties props = new Properties();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, String.format("test-%s", RandomUtils.nextLong()));
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, String.format("test-%s", RandomUtil.getRandom().nextLong()));
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
@@ -225,7 +199,7 @@ public class AdminClientUtil implements Closeable {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> consumer.close()));
       Map<TopicPartition, Long> offsets = consumer.endOffsets(partitions);
       for (Entry<TopicPartition, Long> en : offsets.entrySet()) {
-        System.out.println(String.format("topic:%s\tpartitions:%s, offset:%s", en.getKey().topic(), en.getKey().partition(), en.getValue()));
+        StaticLog.info(String.format("topic:%s\tpartitions:%s, offset:%s", en.getKey().topic(), en.getKey().partition(), en.getValue()));
       }
       return offsets; 
     }
@@ -256,8 +230,8 @@ public class AdminClientUtil implements Closeable {
       KafkaFuture<Collection<AclBinding>> f = res.values();
       Collection<AclBinding> acls = f.get();
       for (AclBinding acl : acls) {
-        System.out.println(String.format("%s:%s:%s", acl.pattern().resourceType(), acl.pattern().name(), acl.pattern().patternType()));
-        System.out.println(String.format("\t%s has %s permission for operations: %s from hosts: %s",
+        StaticLog.info(String.format("%s:%s:%s", acl.pattern().resourceType(), acl.pattern().name(), acl.pattern().patternType()));
+        StaticLog.info(String.format("\t%s has %s permission for operations: %s from hosts: %s",
                                          acl.entry().principal(),
                                          acl.entry().permissionType(),
                                          acl.entry().operation(),
@@ -278,8 +252,8 @@ public class AdminClientUtil implements Closeable {
       KafkaFuture<Collection<AclBinding>> f = res.all();
       Collection<AclBinding> acls = f.get();
       for (AclBinding acl : acls) {
-        System.out.println(String.format("%s:%s:%s", acl.pattern().resourceType(), acl.pattern().name(), acl.pattern().patternType()));
-        System.out.println(String.format("\t%s has %s permission for operations: %s from hosts: %s",
+        StaticLog.info(String.format("%s:%s:%s", acl.pattern().resourceType(), acl.pattern().name(), acl.pattern().patternType()));
+        StaticLog.info(String.format("\t%s has %s permission for operations: %s from hosts: %s",
                                          acl.entry().principal(),
                                          acl.entry().permissionType(),
                                          acl.entry().operation(),

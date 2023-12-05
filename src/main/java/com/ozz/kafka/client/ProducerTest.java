@@ -1,22 +1,20 @@
 package com.ozz.kafka.client;
 
+import cn.hutool.log.StaticLog;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
-import java.util.Properties;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.SchemaBuilder.FieldAssembler;
 import org.apache.avro.SchemaBuilder.RecordBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.producer.Callback;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
+
+import java.util.Properties;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class ProducerTest {
   public static void main(String[] args) throws Exception {
@@ -65,7 +63,7 @@ public class ProducerTest {
               e.printStackTrace();
             } else {
               cdl.countDown();
-              System.out.println(String.format("callback %s: topic=%s, partition=%s, offset:%s", finalId, metadata.topic(), metadata.partition(), metadata.offset()));
+              StaticLog.info(String.format("callback %s: topic=%s, partition=%s, offset:%s", finalId, metadata.topic(), metadata.partition(), metadata.offset()));
             }
           }
         });
@@ -73,9 +71,9 @@ public class ProducerTest {
       }
       producer.flush();
       if(cdl.await(30, TimeUnit.SECONDS)) {
-        System.out.println("records submitted");
+        StaticLog.info("records submitted");
       } else {
-        System.out.println("records submit error, see the callback log for more information");
+        StaticLog.info("records submit error, see the callback log for more information");
       }
     }
   }
