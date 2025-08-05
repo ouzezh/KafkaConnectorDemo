@@ -41,7 +41,7 @@ dependencies {
 	implementation "io.confluent:kafka-connect-avro-converter:6.0.0"
 	implementation 'org.apache.kafka:connect-runtime:6.0.0-ce'// kafka runtime jar, not need if start with connection-standalone in confluent install direction
 
-    implementation 'cn.hutool:hutool-all:5.8.18'// Hutool是一个小而全的Java工具类库implementation 'cn.hutool:hutool-all:5.8.18'// Hutool是一个小而全的Java工具类库
+    implementation 'cn.hutool:hutool-all:5.8.39'// Hutool是一个小而全的Java工具类库implementation 'cn.hutool:hutool-all:5.8.39'// Hutool是一个小而全的Java工具类库
 
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
